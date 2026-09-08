@@ -1,0 +1,32 @@
+name: Run Minecraft Server
+on:
+  repository_dispatch:
+    types: [start-server]
+
+jobs:
+  run-server:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Server Files
+        uses: actions/checkout@v4
+
+      - name: Install Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'microsoft'
+          java-version: '21' # Change to 17 if you are running an older Minecraft version (below 1.20.5)
+
+      - name: Install Playit.gg
+        run: |
+          sudo curl -o /usr/local/bin/playit https://playit.gg
+          sudo chmod +x /usr/local/bin/playit
+
+      - name: Start Minecraft Server
+        env:
+          PLAYIT_SECRET: ${{ secrets.PLAYIT_SECRET }}
+        run: |
+          echo "eula=true" > eula.txt
+          # Start the playit tunnel in the background
+          playit --secret "$PLAYIT_SECRET" & 
+          # Launch the server jar. Change 'server.jar' to your actual server filename if it's different!
+          java -Xmx6G -Xms6G -jar server.jar nogui
