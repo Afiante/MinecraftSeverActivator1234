@@ -28,4 +28,4 @@ jobs:
         run: |
           echo "eula=true" > eula.txt
           playit --secret "$PLAYIT_SECRET" & 
-          java -Xmx4G -Xms8G -jar server.jar nogui
+          java -Xmx4G -Xms7G -jar server.jar nogui
