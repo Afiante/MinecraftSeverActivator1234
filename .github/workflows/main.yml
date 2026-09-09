@@ -1,0 +1,34 @@
+name: Run Minecraft Server
+
+on:
+  repository_dispatch:
+    types: [start-server] # This catches the command from your Discord Bot
+  workflow_dispatch: # This adds a manual "Run workflow" button on GitHub web for testing
+
+jobs:
+  run-server:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Server Files
+        uses: actions/checkout@v4
+
+      - name: Install Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'microsoft'
+          java-version: '21' # Change to '17' if you are running a Minecraft version older than 1.20.5
+
+      - name: Install Playit.gg for Networking
+        run: |
+          sudo curl -o /usr/local/bin/playit https://playit.gg
+          sudo chmod +x /usr/local/bin/playit
+
+      - name: Start Minecraft Server
+        env:
+          PLAYIT_SECRET: ${{ secrets.PLAYIT_SECRET }}
+        run: |
+          echo "eula=true" > eula.txt
+          # Start the playit network tunnel in the background
+          playit --secret "$PLAYIT_SECRET" & 
+          # Launch your Minecraft server file. Make sure your actual jar is named server.jar!
+          java -Xmx6G -Xms6G -jar server.jar nogui
