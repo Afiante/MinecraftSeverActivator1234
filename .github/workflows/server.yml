@@ -1,7 +1,8 @@
 name: Run Minecraft Server
 on:
   repository_dispatch:
-    types: [start-server]
+    types: [start-server] # This line must be exactly here!
+
 
 jobs:
   run-server:
