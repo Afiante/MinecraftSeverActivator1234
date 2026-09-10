@@ -27,8 +27,8 @@ jobs:
         run: |
           sudo apt-get update && sudo apt-get install -y unzip
           
-          # 📥 ✅ DIRECT SYSTEM LINK: Pulls your 380MB PaperMc server zip package straight from Dropbox safely
-          curl -L -o PaperMC.zip "https://dropbox.com"
+          # 📥 ✅ FIXED DIRECT LINK: Uses Dropbox's raw usercontent subdomain layout to bypass bot blocks safely
+          curl -L -o PaperMC.zip "https://dropboxusercontent.com"
           
           if [ -f "PaperMC.zip" ]; then 
             unzip -o PaperMC.zip
@@ -70,7 +70,9 @@ jobs:
           echo "🚀 Discord control bridge initialized successfully!"
 
           # 3. Step inside your folder and fire up the main Paper engine
-          cd PaperMc
+          # Note: If your zip extracted with lowercase 'c', it matches perfectly.
+          if [ -d "PaperMC" ]; then cd PaperMC; else cd PaperMc; fi
+          
           echo "eula=true" > eula.txt
           playit --secret "$PLAYIT_SECRET" & 
           java -Xmx6G -Xms6G -jar paper.jar nogui
