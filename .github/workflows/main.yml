@@ -27,14 +27,16 @@ jobs:
         run: |
           sudo apt-get update && sudo apt-get install -y unzip
           
-          # 📥 ✅ FIXED DIRECT LINK: Uses Dropbox's raw usercontent subdomain layout to bypass bot blocks safely
+          echo "📥 Starting direct download from Dropbox cloud..."
+          # ✅ CLEAN DOWNLOAD: Pulls your 380MB PaperMc server archive package using the isolated subdomain endpoint directly
           curl -L -o PaperMC.zip "https://dropboxusercontent.com"
           
           if [ -f "PaperMC.zip" ]; then 
+            echo "📦 Extracting file contents..."
             unzip -o PaperMC.zip
             echo "✅ Server files unpacked successfully!"
           else
-            echo "❌ Error: Failed to extract server zip archive pack."
+            echo "❌ Error: Failed to find downloaded server package archive."
             exit 1
           fi
 
@@ -43,7 +45,7 @@ jobs:
           PLAYIT_SECRET: ${{ secrets.PLAYIT_SECRET }}
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
         run: |
-          # 1. Write the bot code into a clean file right inside the cloud machine
+          # Write the bot code into a clean file right inside the cloud machine
           cat << 'EOF' > run_bot.py
           import os
           import discord
@@ -64,13 +66,12 @@ jobs:
           bot.run(os.getenv("DISCORD_TOKEN"))
           EOF
 
-          # 2. Boot up your Discord bot in the background so it stays online 24/7
+          # Boot up your Discord bot in the background so it stays online 24/7
           pip install discord.py
           python3 run_bot.py &
           echo "🚀 Discord control bridge initialized successfully!"
 
-          # 3. Step inside your folder and fire up the main Paper engine
-          # Note: If your zip extracted with lowercase 'c', it matches perfectly.
+          # Step inside your folder and fire up the main Paper engine
           if [ -d "PaperMC" ]; then cd PaperMC; else cd PaperMc; fi
           
           echo "eula=true" > eula.txt
