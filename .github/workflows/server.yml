@@ -2,8 +2,8 @@ name: 24/7 Cloud Minecraft Engine & Bot
 
 on:
   push:
-    branches: [ "main" ] # Automatically boots up whenever you change a file
-  workflow_dispatch: # Gives you a manual "Run workflow" button on GitHub web
+    branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
   run-server:
@@ -25,29 +25,48 @@ jobs:
 
       - name: Force Download and Extract PaperMC Folder
         run: |
-          sudo apt-get update && sudo apt-get install -y unzip
-          
-          # 📡 FIXED AUTOMATIC LINK RESOLVER: Targets the explicit 'downloadButton' element inside MediaFire's code
-          echo "🔍 Fetching raw page layout..."
-          PAGE_CONTENT=$(curl -sL "https://mediafire.com")
-          
-          echo "🔍 Scanning layout for download ID mappings..."
-          FINAL_URL=$(echo "$PAGE_CONTENT" | grep -oE 'href="https?://download[^"]+"[[:space:]]+id="downloadButton"' | grep -oE 'https?://[^"]+')
-          
-          if [ -z "$FINAL_URL" ]; then
-            echo "⚠️ Fallback: Running structural pattern scanning..."
-            FINAL_URL=$(echo "$PAGE_CONTENT" | grep -oE 'https?://download[^"'\'' ]+' | head -n 1)
-          fi
-          
-          # Clean out hidden layout formatting blocks
-          FINAL_URL=$(echo "$FINAL_URL" | tr -d '\r' | tr -d ' ' | tr -d '"')
+          sudo apt-get update && sudo apt-get install -y unzip python3-pip
+          pip3 install beautifulsoup4 requests --break-system-packages
+
+          # 📡 ADVANCED PYTHON SCRAPER: Solves MediaFire's dynamic JavaScript token layout blocks
+          python3 -c "
+          import requests
+          from bs4 import BeautifulSoup
+          import re
+          import sys
+
+          try:
+              headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
+              res = requests.get('https://mediafire.com', headers=headers)
+              soup = BeautifulSoup(res.text, 'html.parser')
+              
+              # Locate the exact physical download button container
+              a_tag = soup.find('a', {'id': 'downloadButton'})
+              if a_tag and a_tag.get('href'):
+                  print(a_tag.get('href').strip())
+                  sys.exit(0)
+                  
+              # Fallback layout regex pattern matching
+              links = re.findall(r'href=\"(https?://download[^ \"]+)\"', res.text)
+              if links:
+                  print(links[0].strip())
+                  sys.exit(0)
+                  
+              print('ERROR', file=sys.stderr)
+              sys.exit(1)
+          except Exception as e:
+              print(f'ERROR: {e}', file=sys.stderr)
+              sys.exit(1)
+          " > live_link.txt
+
+          FINAL_URL=$(cat live_link.txt)
           echo "📡 Found live file server endpoint: $FINAL_URL"
-          
-          if [ -z "$FINAL_URL" ]; then
-            echo "❌ Critical Error: Could not resolve MediaFire download link element structure."
+
+          if [ "$FINAL_URL" = "ERROR" ] || [ -z "$FINAL_URL" ]; then
+            print "❌ Critical Error: MediaFire shield blocked account layout parameters."
             exit 1
           fi
-          
+
           # Pulls down your 380MB PaperMc server zip package cleanly
           curl -L -o PaperMC.zip "$FINAL_URL"
           
@@ -86,9 +105,8 @@ jobs:
           EOF
 
           # 2. Boot up your Discord bot in the background so it stays online 24/7
-          pip install discord.py
-          python run_bot.py &
-          echo "🚀 Discord control bridge initialized successfully!"
+          python3 run_bot.py &
+          print "🚀 Discord control bridge initialized successfully!"
 
           # 3. Step inside your folder and fire up the main Paper engine
           cd PaperMc
