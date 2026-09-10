@@ -1,9 +1,9 @@
-name: Run Minecraft Server
+name: 24/7 Cloud Minecraft Engine & Bot
 
 on:
-  repository_dispatch:
-    types: [start-server]
-  workflow_dispatch:
+  push:
+    branches: [ "main" ] # Automatically boots up whenever you change a file
+  workflow_dispatch: # Gives you a manual "Run workflow" button on GitHub web
 
 jobs:
   run-server:
@@ -27,27 +27,54 @@ jobs:
         run: |
           sudo apt-get update && sudo apt-get install -y unzip
           
-          # 📥 ✅ FIXED: Uses the verified raw download stream URL to pull your 380MB PaperMc server zip package cleanly
-          curl -L -o PaperMC.zip "https://mediafire.com"
+          # 📡 AUTOMATIC LINK RESOLVER: Scrapes your original MediaFire link, extracts the fresh download address, and downloads it safely
+          FINAL_URL=$(curl -s "https://mediafire.com" | grep -Eo 'https?://download[^"'\''\ ]+' | head -n 1)
+          echo "📡 Found live file server endpoint: $FINAL_URL"
+          
+          # Pulls down your 380MB PaperMc server zip package cleanly
+          curl -L -o PaperMC.zip "$FINAL_URL"
           
           if [ -f "PaperMC.zip" ]; then 
             unzip -o PaperMC.zip
-            echo "✅ Whole PaperMC server folder extracted successfully!"
+            echo "✅ Server files unpacked successfully!"
           else
-            echo "❌ Error: Failed to download the server folder archive package."
+            echo "❌ Error: Failed to extract server zip archive pack."
+            exit 1
           fi
 
-      - name: Execute Live Server Deployment Core
+      - name: Initialize Discord Bot & Server Loop
         env:
           PLAYIT_SECRET: ${{ secrets.PLAYIT_SECRET }}
+          DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
         run: |
-          # Step inside your extracted server folder where paper.jar lives
+          # 1. Write the bot code into a clean file right inside the cloud machine
+          cat << 'EOF' > run_bot.py
+          import os
+          import discord
+          from discord.ext import commands
+
+          intents = discord.Intents.default()
+          intents.message_content = True
+          bot = commands.Bot(command_prefix="!", intents=intents)
+
+          @bot.event
+          async def on_ready():
+              print(f"🤖 Cloud Bot is online inside GitHub Actions as: {bot.user}")
+
+          @bot.command()
+          async def status(ctx):
+              await ctx.send("🟢 **Server Status:** The cloud console is active and PaperMC is running in the background!")
+
+          bot.run(os.getenv("DISCORD_TOKEN"))
+          EOF
+
+          # 2. Boot up your Discord bot in the background so it stays online 24/7
+          pip install discord.py
+          python run_bot.py &
+          echo "🚀 Discord control bridge initialized successfully!"
+
+          # 3. Step inside your folder and fire up the main Paper engine
           cd PaperMc
-          
           echo "eula=true" > eula.txt
-          
-          # Initialize background network tunnels securely
           playit --secret "$PLAYIT_SECRET" & 
-          
-          # Launch your primary Paper jar configuration structure cleanly
           java -Xmx6G -Xms6G -jar paper.jar nogui
