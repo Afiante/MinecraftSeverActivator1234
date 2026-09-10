@@ -2,30 +2,48 @@ name: Run Minecraft Server
 
 on:
   repository_dispatch:
-    types: [start-server] # Crucial mismatch fix!
+    types: [start-server]
+  workflow_dispatch:
 
 jobs:
   run-server:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Server Files
+      - name: Checkout Repository Archive
         uses: actions/checkout@v4
 
-      - name: Install Java
+      - name: Install Runtime Java Environment
         uses: actions/setup-java@v4
         with:
           distribution: 'microsoft'
           java-version: '21'
 
-      - name: Install Playit.gg for Networking
+      - name: Provision Playit Tunnel Agent
         run: |
           sudo curl -o /usr/local/bin/playit https://playit.gg
           sudo chmod +x /usr/local/bin/playit
 
-      - name: Start Minecraft Server
+      - name: Extract Full PaperMC Folder Structure
+        run: |
+          sudo apt-get update && sudo apt-get install -y unzip
+          if [ -f "PaperMC.zip" ]; then 
+            unzip -o PaperMC.zip
+            echo "✅ Server folder extracted successfully!"
+          else
+            echo "⚠️ Warning: PaperMC.zip archive package was not found."
+          fi
+
+      - name: Execute Live Server Deployment Core
         env:
           PLAYIT_SECRET: ${{ secrets.PLAYIT_SECRET }}
         run: |
+          # ✅ Move inside the extracted PaperMC folder where your paper.jar lives
+          cd PaperMC
+          
           echo "eula=true" > eula.txt
+          
+          # Initialize background network tunnels securely
           playit --secret "$PLAYIT_SECRET" & 
-          java -Xmx4G -Xms7G -jar server.jar nogui
+          
+          # Launch your primary Paper jar configuration structure cleanly
+          java -Xmx6G -Xms6G -jar paper.jar nogui
