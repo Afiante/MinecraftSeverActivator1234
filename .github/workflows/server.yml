@@ -27,12 +27,28 @@ jobs:
         run: |
           sudo apt-get update && sudo apt-get install -y unzip
           
-          # 📡 FIXED LINK RESOLVER: Cleans carriage returns and isolates the exact layout block perfectly
-          RAW_URL=$(curl -s "https://mediafire.com" | grep -Eo 'https?://download[^"'\''\ ]+' | head -n 1)
-          FINAL_URL=$(echo "$RAW_URL" | tr -d '\r' | tr -d ' ')
+          # 📡 FIXED AUTOMATIC LINK RESOLVER: Targets the explicit 'downloadButton' element inside MediaFire's code
+          echo "🔍 Fetching raw page layout..."
+          PAGE_CONTENT=$(curl -sL "https://mediafire.com")
+          
+          echo "🔍 Scanning layout for download ID mappings..."
+          FINAL_URL=$(echo "$PAGE_CONTENT" | grep -oE 'href="https?://download[^"]+"[[:space:]]+id="downloadButton"' | grep -oE 'https?://[^"]+')
+          
+          if [ -z "$FINAL_URL" ]; then
+            echo "⚠️ Fallback: Running structural pattern scanning..."
+            FINAL_URL=$(echo "$PAGE_CONTENT" | grep -oE 'https?://download[^"'\'' ]+' | head -n 1)
+          fi
+          
+          # Clean out hidden layout formatting blocks
+          FINAL_URL=$(echo "$FINAL_URL" | tr -d '\r' | tr -d ' ' | tr -d '"')
           echo "📡 Found live file server endpoint: $FINAL_URL"
           
-          # ✅ FIXED: Strict quotes added around the URL variable to bypass character format rejections
+          if [ -z "$FINAL_URL" ]; then
+            echo "❌ Critical Error: Could not resolve MediaFire download link element structure."
+            exit 1
+          fi
+          
+          # Pulls down your 380MB PaperMc server zip package cleanly
           curl -L -o PaperMC.zip "$FINAL_URL"
           
           if [ -f "PaperMC.zip" ]; then 
