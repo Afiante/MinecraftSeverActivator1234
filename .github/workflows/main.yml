@@ -2,8 +2,8 @@ name: 24/7 Cloud Minecraft Engine & Bot
 
 on:
   push:
-    branches: [ "main" ] # Automatically boots up whenever you change a file
-  workflow_dispatch: # Gives you a manual "Run workflow" button on GitHub web
+    branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
   run-server:
@@ -27,12 +27,8 @@ jobs:
         run: |
           sudo apt-get update && sudo apt-get install -y unzip
           
-          # 📡 AUTOMATIC LINK RESOLVER: Scrapes your original MediaFire link, extracts the fresh download address, and downloads it safely
-          FINAL_URL=$(curl -s "https://mediafire.com" | grep -Eo 'https?://download[^"'\''\ ]+' | head -n 1)
-          echo "📡 Found live file server endpoint: $FINAL_URL"
-          
-          # Pulls down your 380MB PaperMc server zip package cleanly
-          curl -L -o PaperMC.zip "$FINAL_URL"
+          # 📥 ✅ DIRECT SYSTEM LINK: Pulls your 380MB PaperMc server zip package straight from Dropbox safely
+          curl -L -o PaperMC.zip "https://dropbox.com"
           
           if [ -f "PaperMC.zip" ]; then 
             unzip -o PaperMC.zip
@@ -70,7 +66,7 @@ jobs:
 
           # 2. Boot up your Discord bot in the background so it stays online 24/7
           pip install discord.py
-          python run_bot.py &
+          python3 run_bot.py &
           echo "🚀 Discord control bridge initialized successfully!"
 
           # 3. Step inside your folder and fire up the main Paper engine
